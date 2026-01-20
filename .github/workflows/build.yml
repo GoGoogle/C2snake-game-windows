@@ -1,0 +1,70 @@
+name: Build Snake Game
+
+# 触发条件：push 或 pull request 到 main 分支
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup MinGW
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          make
+    
+    - name: Verify GCC installation
+      shell: msys2 {0}
+      run: |
+        gcc --version
+        echo "GCC is installed and ready"
+    
+    - name: Build Snake Game
+      shell: msys2 {0}
+      run: |
+        echo "Building Snake Game..."
+        gcc -Wall -O2 -o snake.exe src/snake.c
+        echo "Build completed successfully!"
+    
+    - name: Verify executable
+      shell: msys2 {0}
+      run: |
+        if [ -f "snake.exe" ]; then
+          echo "✓ snake.exe generated successfully"
+          ls -lh snake.exe
+        else
+          echo "✗ snake.exe not found"
+          exit 1
+        fi
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: snake-game-windows
+        path: snake.exe
+        retention-days: 30
+    
+    - name: Build summary
+      run: |
+        echo "### Build Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Snake Game built successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Platform:** Windows (MinGW64)" >> $GITHUB_STEP_SUMMARY
+        echo "**Compiler:** GCC" >> $GITHUB_STEP_SUMMARY
+        echo "**Output:** snake.exe" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Download the artifact from the Actions page to play the game!" >> $GITHUB_STEP_SUMMARY
